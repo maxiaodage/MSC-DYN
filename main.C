@@ -37,8 +37,8 @@ int main() {
   double y_min = 0.0;
   double y_max = 50.0e3;
   int dim = 2.0;
-  double dx = 25;
-  double dy = 25;
+  double dx = 50;
+  double dy = 50;
    double nx = (x_max-x_min)/dx;
    double ny = (y_max-y_min)/dy;
   //double nx = 1;
@@ -53,6 +53,19 @@ int main() {
 
   VectorXd x = VectorXd::LinSpaced(nx+1,x_min,x_max);
   VectorXd y = VectorXd::LinSpaced(ny+1,y_min,y_max);
+
+  int station_neg_12_x = (((x_max-x_min)/2-12.0e3)/dx)+1;
+  int station_neg_12_y = (0.0+3.0e3/dy)+1;
+  int node_neg_12 = (station_neg_12_y-1)*(nx+1)+station_neg_12_x-1;
+  int index_neg_12_x = node_neg_12*2;
+  int index_neg_12_y = node_neg_12*2+1;
+
+  int station_pos_12_x = (((x_max-x_min)/2+12.0e3)/dx)+1;
+  int station_pos_12_y = (0.0+3.0e3/dy)+1;
+  int node_pos_12 = (station_pos_12_y-1)*(nx+1)+station_pos_12_x-1;
+  int index_pos_12_x = node_pos_12*2;
+  int index_pos_12_y = node_pos_12*2+1;
+  cout<<index_neg_12_x<<"\t"<<index_neg_12_y<<"\t"<<index_pos_12_x<<"\t"<<index_pos_12_y<<endl;
   int n_nodes = Node_top.rows();
   int nel = Element_top.rows();
   // Material Property
@@ -71,8 +84,12 @@ int main() {
   double beta =0.1;
   double q = beta*dt;
   // number of time steps
-  double numt = 3;
-  VectorXd time = dt*VectorXd::LinSpaced(numt,1,numt);
+
+  double time_run = 12.0;
+
+  int numt = time_run/dt;
+  //int numt = 3;
+  VectorXd time_total = dt*VectorXd::LinSpaced(numt,1,numt);
   // Number of dof per nodes
   int Ndofn = 2;
   // Number of node per elements
@@ -207,9 +224,20 @@ int main() {
 //
 printf("ready to start\n");
 double start= omp_get_wtime();
-std::ofstream slip_x("slip.txt");
-std::ofstream rate_x("slip_rate.txt");
-std::ofstream shear_x("shear.txt");
+
+std::ofstream slip_x("results/slip.txt");
+std::ofstream rate_x("results/slip_rate.txt");
+std::ofstream shear_x("results/shear.txt");
+std::ofstream neg_12_u_x("results/neg_12_u_x.txt");
+std::ofstream neg_12_u_y("results/neg_12_u_y.txt");
+std::ofstream neg_12_v_x("results/neg_12_v_x.txt");
+std::ofstream neg_12_v_y("results/neg_12_v_y.txt");
+
+std::ofstream pos_12_u_x("results/pos_12_u_x.txt");
+std::ofstream pos_12_u_y("results/pos_12_u_y.txt");
+std::ofstream pos_12_v_x("results/pos_12_v_x.txt");
+std::ofstream pos_12_v_y("results/pos_12_v_y.txt");
+
 
  for (int j=0;j<numt;j++)
   {
@@ -358,7 +386,7 @@ double start = omp_get_wtime();
 //   delt_v_n_x = 2.0*v_n_fault_x;
 //
  //cout<<delt_u_n_x<<"\n"<<"**********"<<"\n";
- printf("Simulation time = %f\n",time(j));
+ printf("Simulation time = %f\n",time_total(j));
 
  // fprintf(fp,"%f\n",delt_u_n_x);
  // fwrite(delt_u_n_x,fp);
@@ -366,11 +394,21 @@ double start = omp_get_wtime();
  slip_x << delt_u_n_x<<"\n";
  rate_x << delt_v_n_x<<"\n";
  shear_x << T_cx<<"\n";
+ neg_12_u_x << u_n_pos(index_neg_12_x)<<"\n";
+ //cout<<u_n_pos(index_neg_12_x)<<"\n";
+ neg_12_u_y << u_n_pos(index_neg_12_y)<<"\n";
+  neg_12_v_x << v_n_pos(index_neg_12_x)<<"\n";
+  neg_12_v_y << v_n_pos(index_neg_12_y)<<"\n";
+ //
+ pos_12_u_x << u_n_pos(index_pos_12_x)<<"\n";
+ pos_12_u_y << u_n_pos(index_pos_12_y)<<"\n";
+ pos_12_v_x << v_n_pos(index_pos_12_x)<<"\n";
+ pos_12_v_y << v_n_pos(index_pos_12_y)<<"\n";
+
 
   }
   double end = omp_get_wtime();
-
-  printf("Time = %f\n",end-start);
+  printf("CPU Time = %f\n",end-start);
 
 //  //cout<<index_store<<"\n";
   return 0;
